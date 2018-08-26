@@ -78,7 +78,7 @@
 					return {
 						friends: currentState.friends.concat([{
 							name: currentState.input,
-							status: 'Active'
+							active: true
 						}]), 
 						input: ''
 					}
@@ -102,10 +102,10 @@
 
 					return {
 						friends: currentState.friends.filter(friend => friend.name !== name)
-							.concat([
+							.concat([{
 								name,
 								active: !friend.active
-							])
+							}])
 					}
 				})
 			}
