@@ -1,14 +1,15 @@
 <html>
 <head>
-	<title>Parcel Sandbox</title>
+	<title>React Seprate Friends</title>
 	<meta charset="UTF-8" />
-	<script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
-	<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
 </head>
 
 <body>
 	<div id="app"></div>
+
+	<script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+	<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
 	<script type="text/babel">
 		function ActiveFriendList (props) {
 			return (
@@ -51,15 +52,15 @@
 					friends: [
 						{
 							name: 'GFW',
-							status: 'Active'
+							active: true
 						},
 						{
 							name: 'XK',
-							status: 'Inactive'
+							active: true
 						},
 						{
 							name: 'XWP',
-							status: 'Inactive'
+							active: false
 						}
 					],
 					input: ''
@@ -69,8 +70,7 @@
 				this.updateInput = this.updateInput.bind(this)
 				this.handleAddFriend = this.handleAddFriend.bind(this)
 				this.handleClearAllFriend = this.handleClearAllFriend.bind(this)
-				this.handleActivateFriend = this.handleActivateFriend.bind(this)
-				this.handleDeactivateFriend = this.handleDeactivateFriend.bind(this)
+				this.handleToggleFriend = this.handleToggleFriend.bind(this)
 			}
 			handleAddFriend () {
 				if (!this.state.input) return
@@ -96,31 +96,16 @@
 					friends: []
 				})
 			}
-			handleDeactivateFriend (name) {
+			handleToggleFriend (name) {
 				this.setState(currentState => {
+					const friend = currentState.friends.find(friend => friend.name === name)
+
 					return {
-						friends: currentState.friends.map(friend => {
-							if (friend.name === name) {
-								return {
-									name,
-										status: 'Inactive'
-							   }
-							 } else return friend
-						})
-					}
-				})
-			}
-			handleActivateFriend (name) {
-				this.setState(currentState => {
-					return {
-						friends: currentState.friends.map(friend => {
-							if (friend.name === name) {
-								return {
-									name,
-									  status: 'Active'
-							 	 } 
-							 } else return friend
-						})
+						friends: currentState.friends.filter(friend => friend.name !== name)
+							.concat([
+								name,
+								active: !friend.active
+							])
 					}
 				})
 			}
@@ -132,8 +117,8 @@
 				})
 			}
 			render () {
-				const activeFriends = this.state.friends.filter(friend => friend.status === 'Active')
-				const inactiveFriends = this.state.friends.filter(friend => friend.status === 'Inactive')
+				const activeFriends = this.state.friends.filter(friend => friend.active === true)
+				const inactiveFriends = this.state.friends.filter(friend => friend.active === false)
 				return (
 					<div id="container">
 						<input
@@ -147,11 +132,11 @@
 						<ActiveFriendList
 							list={activeFriends}
 							onRemoveFriend={this.handleRemoveFriend}
-							onDeactivate={this.handleDeactivateFriend}
+							onDeactivate={this.handleToggleFriend}
 						/>
 						<InactiveFriendList 
 							list={inactiveFriends}
-							onActivate={this.handleActivateFriend}
+							onActivate={this.handleToggleFriend}
 						/>
 					</div>
 				)
