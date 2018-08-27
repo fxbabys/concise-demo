@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Popular Repos</title>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+  <script src='https://unpkg.com/babel-standalone@6/babel.min.js'></script>
+</head>
+<body>
+  <div id='app'></div>
+  <script>
+    window.API = {
+      fetchLanguages () {
+        return new Promise((res, rej) => {
+          const languages = [
+            'all',
+            'javcascript',
+            'ruby',
+            'python'
+          ]
+          res(languages)
+        })
+      },
+      fetchPopularRepos(language) {
+        // "language" can be "javascript", "ruby", "python", or "all"
+        const encodedURI = encodeURI(`https://api.github.com/search/repositories?q=stars:>1+language:${language}&sort=stars&order=desc&type=Repositories`)
+
+        return fetch(encodedURI)
+          .then((data) => data.json())
+          .then((repos) => repos.items)
+          .catch((error) => {
+            console.warn(error)
+            return null
+          });
+      }
+    }
+  </script>
+
+  <script type='text/babel'>
+    class Loading extends React.Component {
+      constructor(props) {
+        super(props);
+
+        this.state = {
+          text: 'Loading'
+        };
+      }
+      componentDidMount() {
+        const stopper = this.state.text + '...';
+
+        this.interval = window.setInterval(() => {
+          this.state.text === stopper
+            ? this.setState(() => ({ text: 'Loading' }))
+            : this.setState((prevState) => ({ text: prevState.text + '.' }))
+        }, 300)
+      }
+      componentWillUnmount() {
+        window.clearInterval(this.interval);
+      }
+      render() {
+        return (
+          <p>
+            {this.state.text}
+          </p>
+        )
+      }
+    }
+
+    class App extends React.Component {
+      constructor (props) {
+        super(props)
+
+        this.state = {
+          languages: [],
+          activeLanguage: '',
+          activePopulars: []
+        }
+
+        this.fetchPopularRepos = this.fetchPopularRepos.bind(this)
+      }
+      componentDidMount () {
+        API.fetchLanguages()
+          .then(languages => {
+            this.setState({
+              languages
+            })
+          })
+          .catch(err => console.log(err))
+      }
+      fetchPopularRepos (prevLang, language) {
+        if (prevLang === language) return
+        const activePopulars = []
+        API.fetchPopularRepos(language)
+          .then(repos => {
+            for (let repo of repos) {
+              activePopulars.push({
+                name: repo.name,
+                url: repo.owner.html_url,
+                owner: '@' + repo.owner.login,
+                stars: repo.stargazers_count + ' stars'
+              })
+            }
+            this.setState({
+              activeLanguage: language,
+              activePopulars
+            })
+          })
+          .catch(err => console.log(err))
+      }
+      render() {
+        return (
+          <div>
+            <ul>
+              {this.state.languages.map(language => (
+                <li
+                  key={language}
+                  onClick={() => this.fetchPopularRepos(this.state.activeLanguage, language)}
+                >
+                {language}
+                </li>
+              ))}
+            </ul>
+            <h1>{this.state.activeLanguage}</h1>
+            <div>
+              {this.state.activePopulars.map(popular => (
+                <ul key={popular.name}>
+                  <li><a href={popular.url}>{popular.name}</a></li>
+                  <li>{popular.owner}</li>
+                  <li>{popular.stars}</li>
+                </ul>
+              ))}
+            </div>
+          </div>
+        )
+      }
+    }
+
+    ReactDOM.render(
+      <App />,
+      document.getElementById('app')
+    )
+  </script>
+</body>
+</html>
