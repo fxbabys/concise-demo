@@ -66,17 +66,12 @@
       }
     }
 
-    class App extends React.Component {
+    class Nav extends React.Component {
       constructor (props) {
         super(props)
-
         this.state = {
-          languages: [],
-          activeLanguage: '',
-          activePopulars: []
+          languages: []
         }
-
-        this.fetchPopularRepos = this.fetchPopularRepos.bind(this)
       }
       componentDidMount () {
         API.fetchLanguages()
@@ -87,49 +82,91 @@
           })
           .catch(err => console.log(err))
       }
-      fetchPopularRepos (prevLang, language) {
-        if (prevLang === language) return
-        const activePopulars = []
-        API.fetchPopularRepos(language)
-          .then(repos => {
-            for (let repo of repos) {
-              activePopulars.push({
-                name: repo.name,
-                url: repo.owner.html_url,
-                owner: '@' + repo.owner.login,
-                stars: repo.stargazers_count + ' stars'
-              })
-            }
-            this.setState({
-              activeLanguage: language,
-              activePopulars
-            })
-          })
-          .catch(err => console.log(err))
-      }
-      render() {
+      render () {
         return (
-          <div>
+          <nav>
             <ul>
               {this.state.languages.map(language => (
                 <li
                   key={language}
-                  onClick={() => this.fetchPopularRepos(this.state.activeLanguage, language)}
+                  onClick={() => this.props.onSelectLanguage(language)}
                 >
                 {language}
                 </li>
               ))}
             </ul>
-            <h1>{this.state.activeLanguage}</h1>
-            <div>
-              {this.state.activePopulars.map(popular => (
-                <ul key={popular.name}>
-                  <li><a href={popular.url}>{popular.name}</a></li>
-                  <li>{popular.owner}</li>
-                  <li>{popular.stars}</li>
-                </ul>
-              ))}
-            </div>
+          </nav>
+        )
+      }
+    }
+
+    function RepoGrid (props) {
+      return (
+        <ul style={{display: 'flex', flexWrap: 'wrap'}}>
+          {props.activePopulars.map(({name, owner, stargazers_count, html_url}) => (
+            <li key={name} style={{margin: 30}}>
+              <ul>
+                <li><a href={html_url}>{name}</a></li>
+                <li>@{owner.login}</li>
+                <li>{stargazers_count} stars</li>
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    class App extends React.Component {
+      constructor (props) {
+        super(props)
+
+        this.state = {
+          activeLanguage: 'all',
+          activePopulars: [],
+          loading: true
+        }
+
+        this.handleSelectLanguage = this.handleSelectLanguage.bind(this)
+        this.fetchRepos = this.fetchRepos.bind(this)
+      }
+      componentDidMount () {
+        this.fetchRepos(this.state.activeLanguage)
+      }
+      componentDidUpdate (prevProps, prevState) {
+        if (prevState.activeLanguage !== this.state.activeLanguage) {
+          this.fetchRepos(this.state.activeLanguage)
+        }
+      }
+      fetchRepos (lang) {
+        this.setState({
+          loading: true
+        })
+        window.API.fetchPopularRepos(lang)
+          .then(activePopulars => {
+            this.setState({
+              activePopulars,
+              loading: false
+            })
+          })
+          .catch(err => console.log(err))
+      }
+      handleSelectLanguage (lang) {
+        this.setState({
+          activeLanguage: lang
+        })
+      }
+      render() {
+        return (
+          <div>
+            <Nav onSelectLanguage={this.handleSelectLanguage}/>
+            {this.state.loading === true
+            ? <Loading />
+            : <div>
+                <h1 style={{textAlign: 'center'}}>
+                  {this.state.activeLanguage}
+                </h1>
+                <RepoGrid activePopulars={this.state.activePopulars} />
+              </div>}
           </div>
         )
       }
